@@ -7,23 +7,20 @@ const urlPlanets = 'http://localhost:9009/api/planets';
 
 function App() {
   // ❗ Create state to hold the data from the API
-  const [people, setPeople] = useState([]);
-  const [planets, setPlanets] = useState([]);
+  const [peopleWithPlanets, setPeopleWithPlanets] = useState([]);
+  
   // ❗ Create effects to fetch the data and put it in state
   useEffect(() => {
-    const urls = [urlPeople, urlPlanets];
+    Promise.all([axios.get(urlPeople), axios.get(urlPlanets)])
+      .then(([res1, res2]) => {
+        const people = res1.data;
+        const homeworlds = res2.data;
 
-    Promise.all(urls.map(url => axios.get(url)))
-      .then(responses => {
-        const combinedData = responses.map(response => response.data);
-        console.log(combinedData);
-        let rawPeople = combinedData[0]
-        let rawPlanets = combinedData[1]
-        const cleanedData = rawPeople.map(person => {
-          const rawHomeworld = rawPlanets.filter(planet => planet.id === person.homeworld)[0];
-          return { ...person, homeworld: rawHomeworld};
+        const combinedData = people.map(person => {
+          const homeworld = homeworlds.find(hw => hw.id === person.homeworld);
+          return { ...person, homeworld };
         })
-        console.log(cleanedData);
+        setPeopleWithPlanets(combinedData);
       })
       .catch(error => console.error('Error fetching data:', error));
   }, [])
@@ -33,6 +30,9 @@ function App() {
       <h2>Star Wars Characters</h2>
       <p>See the README of the project for instructions on completing this challenge</p>
       {/* ❗ Map over the data in state, rendering a Character at each iteration */}
+      {peopleWithPlanets.map(char => {
+        return <Character key={char.id} name={char.name} planet={char.homeworld.name}/>
+      })}
     </div>
   )
 }
